@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "babeltrace-sys",
+]
+resolver = "2"

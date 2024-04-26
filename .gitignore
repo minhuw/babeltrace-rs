@@ -1,0 +1,8 @@
+# devenv artifacts
+.devenv
+
+# direnv artifacts
+.direnv
+
+# Rust working directory
+target/
