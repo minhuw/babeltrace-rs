@@ -6,9 +6,8 @@ use std::process::Command;
 fn build_babeltrace(out_path: &Path) -> Result<PathBuf> {
     let src_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("babeltrace");
     let work_path = out_path.join("build/");
-    let out_path = out_path.join("babeltrace/");
 
-    std::fs::create_dir_all(&out_path).unwrap();
+    std::fs::create_dir_all(out_path).unwrap();
     std::fs::create_dir_all(&work_path).unwrap();
 
     // cp is very likely to be available on any system with autotools
@@ -19,7 +18,9 @@ fn build_babeltrace(out_path: &Path) -> Result<PathBuf> {
         .output()
         .expect("unable to copy babeltrace");
 
-    let Ok(compiler) = cc::Build::new().try_get_compiler() else { panic!("a C compiler is required to compile babeltrace") };
+    let Ok(compiler) = cc::Build::new().try_get_compiler() else {
+        panic!("a C compiler is required to compile babeltrace")
+    };
 
     println!(
         "cargo:warning=cc: {}, cflags: {}, debug: {}, work_path: {}",
@@ -40,7 +41,9 @@ fn build_babeltrace(out_path: &Path) -> Result<PathBuf> {
         "debug" => "--disable-Werror",
         _ => "",
     };
-    let configure_flags = format!("--disable-python-bindings --disable-python-plugins --disable-man-pages {extra_flags}");
+    let configure_flags = format!(
+        "--disable-python-bindings --disable-python-plugins --disable-man-pages {extra_flags}"
+    );
 
     let compile_result = Command::new("bash")
         .arg("-c")
@@ -58,7 +61,7 @@ fn build_babeltrace(out_path: &Path) -> Result<PathBuf> {
         .expect("unable to compile babeltrace");
 
     if compile_result.status.success() {
-        Ok(out_path)
+        Ok(out_path.to_path_buf())
     } else {
         eprintln!(
             "unable to compile babeltrace\n stdout: {}, stderr: {}",
@@ -76,26 +79,28 @@ fn main() -> anyhow::Result<()> {
     let lib_path = babeltrace.join("lib/");
     let include_path = babeltrace.join("include/");
 
-    println!("cargo:warning=babeltrace: {}", babeltrace.display());
-
-    println!("cargo:rustc-link-search=native={}", lib_path.display());
-    println!("cargo:rustc-link-lib=static=babeltrace2");
-    println!("cargo:rustc-link-lib=glib-2.0");
-    println!("cargo:rustc-link-lib=gmodule-2.0");
-
     println!("cargo:rerun-if-changed=wrapper.h");
+
+    println!("cargo::rustc-link-search=native={}", lib_path.display());
+    println!("cargo::rustc-link-lib=static=babeltrace2");
+    println!("cargo::rustc-link-lib=glib-2.0");
+    println!("cargo::rustc-link-lib=gmodule-2.0");
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .generate_inline_functions(true)
         .clang_arg(format!("-I{}", include_path.display()))
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .default_enum_style(bindgen::EnumVariation::Rust {
+            non_exhaustive: false,
+        })
         .generate()
         .expect("unable to generate bindings");
 
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("couldn't write bindings!");
+
+    // println!("cargo:warning=babeltrace: {}", babeltrace.display());
 
     Ok(())
 }

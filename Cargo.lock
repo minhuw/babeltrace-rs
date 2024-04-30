@@ -88,6 +88,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "db_converter"
+version = "0.1.0"
+dependencies = [
+ "babeltrace-sys",
+]
+
+[[package]]
 name = "either"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

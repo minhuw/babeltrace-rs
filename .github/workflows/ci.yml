@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-      - run: nix develop --impure --command cargo test --all-features --release --tests
+      - run: nix develop ./nix --impure --command cargo test --all-features --release --tests
 
   build:
     name: ${{format('Rust {0}', matrix.rust)}}
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-      - run: nix develop --impure --command cargo check
+      - run: nix develop ./nix --impure --command cargo check
 
   clippy:
     name: Clippy
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-      - run: nix develop --impure --command cargo clippy --all-features --tests --benches -- -Dclippy::all -Dclippy::pedantic
+      - run: nix develop ./nix --impure --command cargo clippy --all-features --tests --benches -- -Dclippy::all -Dclippy::pedantic
 
   audit:
     name: Audit
