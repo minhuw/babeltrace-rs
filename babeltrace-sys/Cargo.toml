@@ -6,9 +6,13 @@ links = "babeltrace"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+vendor_babeltrace = []
+
 [dependencies]
 
 [build-dependencies]
 anyhow = "1.0.82"
 bindgen = { version = "0.69.4", features = ["experimental"] }
 cc = "1.0.95"
+pkg-config = "0.3.30"

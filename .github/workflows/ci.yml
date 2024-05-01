@@ -55,6 +55,7 @@ jobs:
         with:
           submodules: 'true'
       - run: nix develop ./nix --impure --command cargo check
+      - run: nix build ./nix
 
   clippy:
     name: Clippy

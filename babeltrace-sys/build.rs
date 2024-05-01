@@ -75,17 +75,36 @@ fn build_babeltrace(out_path: &Path) -> Result<PathBuf> {
 fn main() -> anyhow::Result<()> {
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    let babeltrace = build_babeltrace(&out_path)?;
-    let lib_path = babeltrace.join("lib/");
-    let include_path = babeltrace.join("include/");
+    let (lib_path, include_path) = if cfg!(feature = "vendor_babeltrace") {
+        let babeltrace = build_babeltrace(&out_path)?;
+        println!("cargo:warning=use vendored babeltrace2");
+
+        (babeltrace.join("lib/"), babeltrace.join("include/"))
+    } else {
+        let babeltrace = pkg_config::Config::new()
+            .statik(true)
+            .atleast_version("2.0")
+            .probe("babeltrace2")
+            .expect("fail to find babeltrace2");
+        println!(
+            "cargo:warning=use system babeltrace2, {}, {}",
+            babeltrace.version,
+            babeltrace.link_paths[0].display()
+        );
+
+        (
+            babeltrace.link_paths[0].clone(),
+            babeltrace.include_paths[0].clone(),
+        )
+    };
 
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rerun-if-changed=build.rs");
 
-    println!("cargo::rustc-link-search=native={}", lib_path.display());
-    println!("cargo::rustc-link-lib=dylib=babeltrace2");
-    println!("cargo::rustc-link-lib=glib-2.0");
-    println!("cargo::rustc-link-lib=gmodule-2.0");
+    println!("cargo:rustc-link-search=native={}", lib_path.display());
+    println!("cargo:rustc-link-lib=dylib=babeltrace2");
+    println!("cargo:rustc-link-lib=glib-2.0");
+    println!("cargo:rustc-link-lib=gmodule-2.0");
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
@@ -101,7 +120,6 @@ fn main() -> anyhow::Result<()> {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("couldn't write bindings!");
 
-    println!("cargo:warning=babeltrace={}", babeltrace.display());
     println!("cargo:include={}", include_path.display());
     println!("cargo:lib={}", lib_path.display());
 

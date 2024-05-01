@@ -23,8 +23,10 @@
       forEachSystem = nixpkgs.lib.genAttrs (import systems);
     in
     {
-      packages = forEachSystem (system: {
+      packages = forEachSystem (system: rec {
         devenv-up = self.devShells.${system}.default.config.procfileScript;
+        plugins = nixpkgs.legacyPackages.${system}.callPackage ./package.nix { };
+        default = plugins;
       });
 
       devShells = forEachSystem (
@@ -98,7 +100,7 @@
                   llvmPackages_15.libclang
                 ];
 
-                # From: https://github.com/NixOS/nixpkgs/blob/1fab95f5190d087e66a3502481e34e15d62090aa/pkgs/applications/  networking/browsers/firefox/common.nix#L247-L253
+                # From: https://github.com/NixOS/nixpkgs/blob/1fab95f5190d087e66a3502481e34e15d62090aa/pkgs/applications/networking/browsers/firefox/common.nix#L247-L253
                 # Set C flags for Rust's bindgen program. Unlike ordinary C
                 # compilation, bindgen does not invoke $CC directly. Instead it
                 # uses LLVM's libclang. To make sure all necessary flags are

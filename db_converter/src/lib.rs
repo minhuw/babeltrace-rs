@@ -17,7 +17,7 @@ struct CSVDumper {
 
 impl CSVDumper {
     pub fn new(name: &str) -> CSVDumper {
-        let csv_name = name.replace(":", "_");
+        let csv_name = name.replace(':', "_");
         CSVDumper {
             file: File::create(format!("{csv_name}.csv")).unwrap(),
             header_dumped: false,
@@ -30,7 +30,7 @@ struct DbConverter {
     index: u64,
     files: HashMap<String, CSVDumper>,
 }
-
+/// # Panics
 #[no_mangle]
 pub extern "C" fn db_converter_consume(
     sink: *mut bt_self_component_sink,
@@ -79,8 +79,7 @@ pub extern "C" fn db_converter_consume(
                         Entry::Vacant(v) => v.insert(CSVDumper::new(class_name)),
                     };
 
-                    match unsafe { bt_field_get_class_type(payload_field) } {
-                        bt_field_class_type::BT_FIELD_CLASS_TYPE_STRUCTURE => {
+                    if unsafe { bt_field_get_class_type(payload_field) == bt_field_class_type::BT_FIELD_CLASS_TYPE_STRUCTURE } {
                             let struct_class: *const bt_field_class = unsafe {
                                 bt_field_borrow_class_const(payload_field)
                             };
@@ -97,7 +96,7 @@ pub extern "C" fn db_converter_consume(
                                 }
                                 header_line.push('\n');
 
-                                dumper.file.write(&header_line.as_bytes()).unwrap();
+                                dumper.file.write_all(header_line.as_bytes()).unwrap();
                                 dumper.header_dumped = true;
                             }
 
@@ -113,31 +112,29 @@ pub extern "C" fn db_converter_consume(
                                 match unsafe { bt_field_get_class_type(member_field) } {
                                     bt_field_class_type::BT_FIELD_CLASS_TYPE_UNSIGNED_INTEGER => {
                                         let member_value = unsafe { bt_field_integer_unsigned_get_value(member_field) };
-                                        csv_line.push_str(format!(",{member_value}").as_str())
+                                        csv_line.push_str(format!(",{member_value}").as_str());
                                     },
                                     bt_field_class_type::BT_FIELD_CLASS_TYPE_SIGNED_INTEGER => {
-                                        let member_value = unsafe { bt_field_integer_unsigned_get_value(member_field) };
-                                        csv_line.push_str(format!(",{member_value}").as_str())
+                                        let member_value = unsafe { bt_field_integer_signed_get_value(member_field) };
+                                        csv_line.push_str(format!(",{member_value}").as_str());
                                     },
                                     bt_field_class_type::BT_FIELD_CLASS_TYPE_SINGLE_PRECISION_REAL => {
                                         let member_value = unsafe { bt_field_real_single_precision_get_value(member_field) };
-                                        csv_line.push_str(format!(",{member_value}").as_str())
+                                        csv_line.push_str(format!(",{member_value}").as_str());
                                     },
                                     bt_field_class_type::BT_FIELD_CLASS_TYPE_DOUBLE_PRECISION_REAL => {
                                         let member_value = unsafe { bt_field_real_double_precision_get_value(member_field) };
-                                        csv_line.push_str(format!(",{member_value}").as_str())
+                                        csv_line.push_str(format!(",{member_value}").as_str());
                                     },
                                     bt_field_class_type::BT_FIELD_CLASS_TYPE_STRING => {
                                         let member_value = unsafe { CStr::from_ptr(bt_field_string_get_value(member_field)) };
-                                        csv_line.push_str(member_value.to_str().unwrap())
+                                        csv_line.push_str(member_value.to_str().unwrap());
                                     },
                                     _ => {}
                                 }
                             }
                             csv_line.push('\n');
-                            dumper.file.write(&csv_line.as_bytes()).unwrap();
-                        }
-                        _ => {}
+                            dumper.file.write_all(csv_line.as_bytes()).unwrap();
                     }
 
                     dbconvert.index += 1;
@@ -149,6 +146,7 @@ pub extern "C" fn db_converter_consume(
     }
 }
 
+/// # Safety
 #[no_mangle]
 pub unsafe extern "C" fn db_converter_graph_is_configured(
     sink: *mut bt_self_component_sink,
@@ -166,13 +164,14 @@ pub unsafe extern "C" fn db_converter_graph_is_configured(
     bt_component_class_sink_graph_is_configured_method_status::BT_COMPONENT_CLASS_SINK_GRAPH_IS_CONFIGURED_METHOD_STATUS_OK
 }
 
+/// # Panics
 #[no_mangle]
 pub extern "C" fn db_converter_finalize(sink: *mut bt_self_component_sink) {
     let dbconvert = unsafe {
         &mut *bt_self_component_get_data(sink.cast::<bt_self_component>()).cast::<DbConverter>()
     };
 
-    for (_, dumper) in dbconvert.files.iter_mut() {
+    for dumper in dbconvert.files.values_mut() {
         dumper.file.flush().unwrap();
     }
 
@@ -181,8 +180,9 @@ pub extern "C" fn db_converter_finalize(sink: *mut bt_self_component_sink) {
     }
 }
 
-// # Panics
-// panic when fails to alloate memory for CString.
+/// # Safety
+/// # Panics
+/// panic when fails to alloate memory for `CString`.
 #[no_mangle]
 pub unsafe extern "C" fn db_converter_initialize(
     sink: *mut bt_self_component_sink,
