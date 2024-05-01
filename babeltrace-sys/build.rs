@@ -5,7 +5,7 @@ use std::process::Command;
 
 fn build_babeltrace(out_path: &Path) -> Result<PathBuf> {
     let src_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("babeltrace");
-    let work_path = out_path.join("build/");
+    let work_path: PathBuf = out_path.join("build/");
 
     std::fs::create_dir_all(out_path).unwrap();
     std::fs::create_dir_all(&work_path).unwrap();
@@ -80,15 +80,16 @@ fn main() -> anyhow::Result<()> {
     let include_path = babeltrace.join("include/");
 
     println!("cargo:rerun-if-changed=wrapper.h");
+    println!("cargo:rerun-if-changed=build.rs");
 
     println!("cargo::rustc-link-search=native={}", lib_path.display());
-    println!("cargo::rustc-link-lib=static=babeltrace2");
+    println!("cargo::rustc-link-lib=dylib=babeltrace2");
     println!("cargo::rustc-link-lib=glib-2.0");
     println!("cargo::rustc-link-lib=gmodule-2.0");
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
-        .generate_inline_functions(true)
+        .wrap_static_fns(true)
         .clang_arg(format!("-I{}", include_path.display()))
         .default_enum_style(bindgen::EnumVariation::Rust {
             non_exhaustive: false,
@@ -100,7 +101,9 @@ fn main() -> anyhow::Result<()> {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("couldn't write bindings!");
 
-    // println!("cargo:warning=babeltrace: {}", babeltrace.display());
+    println!("cargo:warning=babeltrace={}", babeltrace.display());
+    println!("cargo:include={}", include_path.display());
+    println!("cargo:lib={}", lib_path.display());
 
     Ok(())
 }

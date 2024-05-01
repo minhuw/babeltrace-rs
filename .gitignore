@@ -6,3 +6,6 @@
 
 # Rust working directory
 target/
+
+# CMake working directory
+build/

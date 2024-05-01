@@ -2,6 +2,6 @@
 
 members = [
     "babeltrace-sys",
-    "db_converter"
+    "db_converter",
 ]
 resolver = "2"
