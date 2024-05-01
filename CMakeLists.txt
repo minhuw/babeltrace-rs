@@ -27,4 +27,4 @@ add_library(plugins SHARED module.c)
 
 target_link_libraries(plugins PUBLIC db_converter babeltrace2)
 
-install(TARGETS plugins)
+install(TARGETS plugins DESTINATION lib/babeltrace2/plugins)
