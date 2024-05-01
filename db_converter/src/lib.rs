@@ -86,7 +86,7 @@ pub extern "C" fn db_converter_consume(
                             let member_count = unsafe { bt_field_class_structure_get_member_count(struct_class) };
 
                             if !dumper.header_dumped {
-                                let mut header_line="timestamp,".to_owned();
+                                let mut header_line="timestamp".to_owned();
 
                                 for i in 0..member_count {
                                     let member = unsafe {
