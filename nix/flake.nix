@@ -3,6 +3,7 @@
     nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
     systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
+    flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
     devenv.inputs.nixpkgs.follows = "nixpkgs";
   };
 
