@@ -139,6 +139,8 @@ pub extern "C" fn db_converter_consume(
 
                     dbconvert.index += 1;
                 }
+
+                unsafe { babeltrace_sys::bt_message_put_ref(message.cast()) };
             }
 
             bt_component_class_sink_consume_method_status::BT_COMPONENT_CLASS_SINK_CONSUME_METHOD_STATUS_OK
